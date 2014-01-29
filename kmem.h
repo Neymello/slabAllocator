@@ -42,3 +42,12 @@ void kmem_cache_destroy(kmem_cache_t cache);
 void kmem_cache_grow(kmem_cache_t cache);
 
 void kmem_cache_reap(kmem_cache_t cache);
+
+/*
+ * Internal functions
+ *
+ */
+
+kmem_slab_t _kmem_create_slab(int size);
+
+kmem_bufctrl_t _kmem_create_buffer(kmem_slab_t slab, int size);
