@@ -1,5 +1,6 @@
 OBJS=main.o kmem.o
-CFLAGS=-g -I. -Wall -Wextra -lpthread -ggdb3
+#CFLAGS=-g -I. -Wall -Wextra -lpthread -ggdb3
+CFLAGS=-g -I. -lpthread -ggdb3
 BIN=main
 CC=gcc
 
