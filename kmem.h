@@ -6,7 +6,6 @@ struct kmem_slab{
 	struct kmem_slab *next;
 	struct kmem_slab *previous;
 	struct kmem_bufctl *buf_free;
-	struct kmem_bufctl *buf_used;
 };
 typedef struct kmem_slab * kmem_slab_t;
 
@@ -28,8 +27,15 @@ struct kmem_cache{
 	kmem_fn_t constructor;
 	kmem_fn_t destructor;
 	kmem_slab_t slab_free;
+	kmem_slab_t slab_used;
+	kmem_slab_t slab_full;
 };
 typedef struct kmem_cache * kmem_cache_t;
+
+typedef enum{
+	KM_NOSLEEP,
+	KM_SLEEP
+} km_wait_flag;
 
 /*
  * Functions
@@ -52,6 +58,9 @@ void kmem_cache_reap(kmem_cache_t cache);
  *
  */
 
-kmem_slab_t _kmem_create_slab(kmem_fn_t construtor, int size);
+kmem_slab_t __kmem_cache_grow(kmem_cache_t cache, int size, int flag);
 
-kmem_bufctrl_t _kmem_create_buffer(kmem_slab_t slab, kmem_fn_t construtor, int size);
+kmem_bufctrl_t __kmem_create_buffer(kmem_slab_t slab, int size);
+
+void __kmem_cache_reap();
+
