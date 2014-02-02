@@ -72,8 +72,6 @@ kmem_cache_t kmem_cache_create(char *name, int size, int align, kmem_fn_t constr
 
 	cache->align = align;
 
-	__kmem_cache_grow(cache, size, KM_SLEEP);
-
 	return cache;
 }
 
@@ -83,7 +81,6 @@ void kmem_cache_destroy(kmem_cache_t cache){
 	kmem_slab_t aux;
 	int count;
 
-	assert(cache->slab_free_count != 0);
 	assert(cache->slab_used_count == 0);
 	assert(cache->slab_full_count == 0);
 
@@ -92,6 +89,17 @@ void kmem_cache_destroy(kmem_cache_t cache){
 		slab = slab->next;
 
 		free(aux);
+	}
+}
+
+void kmem_cache_reap(kmem_cache_t cache){
+	PRINT_DEBUG("===>Reaping the cache");
+	kmem_slab_t slab;
+
+	if(cache->slab_free_count > 0){
+		slab = cache->slab_free;
+		__remove_from_slab_list(&cache,KM_FREE_LIST);
+		free(slab);
 	}
 }
 

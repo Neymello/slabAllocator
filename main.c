@@ -3,90 +3,80 @@
 #include <assert.h>
 #include <kmem.h>
 
-#define NUM_BUFFERS 10
-
-void * BUFFERS[NUM_BUFFERS];
+#define rdtscll(val) __asm__ __volatile__("rdtsc" : "=A" (val))
+#define OBJ_SIZE 1000
 
 struct testBuf{
 	int id;
 	char * value;
-	int pad[800];
+	int pad[OBJ_SIZE];
 };
 typedef struct testBuf *testBuf_t;
 
 void constr(void *buf, int size){
 	int s = size;
 	s++;
-
-	PRINT_DEBUG("===>Inside construtor\t");
 	testBuf_t buffer = (testBuf_t) buf;
-
-
 	buffer->id=0;
 	buffer->value = NULL;
-
-	PRINT_DEBUG(":::::Leaving constructor\n");
 }
 
 void destruct(void *buf, int size){
 	int s = size;
 	s++;
-	PRINT_DEBUG("===>Inside destructor\t");
 	testBuf_t buffer = (testBuf_t) buf;
-
 	buffer->id=0;
 	buffer->value = NULL;
-
-	PRINT_DEBUG(":::::Leaving destructor\n");
 }
-
-void testAllocation(kmem_cache_t cache, int numLoop){
-	PRINT_DEBUG("===>Test Allocation\n");
-	int index;
-
-	for(index = 0; index < numLoop; index++){
-		testBuf_t b = (testBuf_t) kmem_cache_alloc(cache,KM_SLEEP);
-		assert(b->id == 0);
-		b->id = 20;
-		b->value = "alo";
-		BUFFERS[index] = b;
-	}
-}
-
-void testFreeing(kmem_cache_t cache, int numLoop){
-	PRINT_DEBUG("===>Test Freeing\n");
-	int index;
-
-	for(index = 0; index < numLoop; index++){
-		kmem_cache_free(cache,BUFFERS[index]);
-	}
-}
-
-
-
 
 int main(void) {
+	int count;
+	int num_loop = 100;
+	void *items[num_loop];
+	int num_buf;
+	unsigned long long start, end;
+	printf("##########################\nThe result will be showed in number of cycles\n##########################\n");
+	printf("------------\n\tObjects Size:%d\n\tIterations %d\n------------\n",OBJ_SIZE, num_loop);
 
-	PRINT_DEBUG("aqui %d", 19);
-
-
+	rdtscll(start);
 	kmem_cache_t cache_test = kmem_cache_create("first", sizeof(struct testBuf), 0, &constr, &destruct );
+	rdtscll(end);
+	printf("Overhead for CACHE_CREATE %lld\n", (end-start));
+	assert(cache_test->slab_free_count==0 && cache_test->slab_free_count==0 && cache_test->slab_free_count==0);
 
-	testAllocation(cache_test,NUM_BUFFERS);
+	rdtscll(start);
+	for(count=0;count<num_loop;count++){
+		items[count] = kmem_cache_alloc(cache_test,KM_SLEEP);
+	}
+	rdtscll(end);
+	printf("Overhead for CACHE_ALLOC %lld\n", (end-start)/num_loop);
 
+	rdtscll(start);
+	for(count=0;count<num_loop/2;count++){
+		kmem_cache_free(cache_test,items[count]);
+	}
+	rdtscll(end);
+	printf("Overhead for CACHE_FREE %lld\n", (end-start)/(num_loop/2));
 
-	testFreeing(cache_test, NUM_BUFFERS/2 );
+	rdtscll(start);
+	for(count=num_loop/2;count<num_loop;count++){
+		items[count] = kmem_cache_alloc(cache_test,KM_SLEEP);
+	}
+	rdtscll(end);
+	printf("Overhead for CACHE_ALLOC (pre loaded) %lld\n", (end-start)/(num_loop/2));
 
+	for(count=0;count<num_loop;count++){
+		kmem_cache_free(cache_test,items[count]);
+	}
+	rdtscll(start);
+	kmem_cache_reap(cache_test);
+	rdtscll(end);
+	printf("Overhead for CACHE_REAP %lld\n", (end-start));
 
-	testAllocation(cache_test,NUM_BUFFERS);
-
-
-	testFreeing(cache_test, NUM_BUFFERS/2 );
-
-	testFreeing(cache_test, NUM_BUFFERS );
-
+	rdtscll(start);
 	kmem_cache_destroy(cache_test);
-
+	rdtscll(end);
+	printf("Overhead for CACHE_DESTROY %lld\n", (end-start));
 
 	return 0;
 

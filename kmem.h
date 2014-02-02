@@ -65,6 +65,7 @@ void kmem_cache_free(kmem_cache_t cache, void *buf);
 
 void kmem_cache_destroy(kmem_cache_t cache);
 
+void kmem_cache_reap(kmem_cache_t cache);
 
 /*
  * Internal functions
@@ -78,8 +79,6 @@ kmem_bufctrl_t __kmem_create_buffer(kmem_slab_t slab, void *pointer);
 kmem_bufctrl_t __kmem_pull_buffer(kmem_slab_t *slab_p, int size);
 
 void __kmem_push_buffer(kmem_slab_t *slab_p, kmem_bufctrl_t *bufctrl_p, int size);
-
-void __kmem_cache_reap(kmem_cache_t cache);
 
 /*
  * Convenient
